@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🧠 Memory Match </title>
+
+    <link rel="icon" href="./download.jpeg" type="image/x-icon">
+  <style>
+    /* Reset & basics */
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      user-select: none;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #14141f, #27313a);
+      color: #e0e7ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-weight: 900;
+      font-size: 3rem;
+      letter-spacing: 2px;
+      margin-bottom: 0.4rem;
+      color: #00f0ff;
+      text-shadow:
+        0 0 8px #00f0ff,
+        0 0 12px #00e0ff;
+    }
+    .difficulty {
+      margin-bottom: 1.5rem;
+    }
+    label, select {
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #00e6ff;
+      text-shadow: 0 0 6px #00e6ff;
+    }
+    select {
+      margin-left: 0.6rem;
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      background: #00d9ff;
+      color: #000;
+      box-shadow: 0 0 10px #00d9ff99;
+      transition: background 0.3s ease;
+    }
+    select:hover {
+      background: #00f0ff;
+    }
+
+    /* Stats panel */
+    .stats {
+      display: flex;
+      gap: 2rem;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: #00d9ffcc;
+      text-shadow: 0 0 5px #00d9ff44;
+      user-select: none;
+    }
+
+    /* Board styling */
+    #game-board {
+      display: grid;
+      gap: 16px;
+      justify-content: center;
+      max-width: 600px;
+      width: 100%;
+      perspective: 1200px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Cards */
+    .card {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      cursor: pointer;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        inset 0 0 5px #00d9ffaa,
+        0 4px 15px #00d9ffaa;
+      background: #1c1c27;
+    }
+    .card.flip {
+      transform: rotateY(180deg);
+      cursor: default;
+      box-shadow:
+        0 0 20px #00f0ff,
+        0 0 30px #00f0ff88;
+    }
+    .card.matched {
+      cursor: default;
+      pointer-events: none;
+      box-shadow:
+        0 0 40px #2ecc71,
+        0 0 60px #27ae6022;
+      background: #2ecc71;
+      color: #000;
+      font-weight: 900;
+      transform: rotateY(180deg);
+    }
+
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      user-select: none;
+      transition: background 0.3s;
+      box-shadow: inset 0 0 10px #0008;
+    }
+
+    .front {
+      background: linear-gradient(145deg, #222236, #1a1a2c);
+      box-shadow:
+        inset 0 0 15px #000d,
+        0 2px 5px #000c;
+    }
+
+    .back {
+      background: linear-gradient(135deg, #00f0ff, #00a3cc);
+      color: #000;
+      font-weight: 900;
+      transform: rotateY(180deg);
+      text-shadow:
+        0 0 8px #00f0ffcc;
+    }
+
+    /* Restart button */
+    button.restart-btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 30px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      cursor: pointer;
+      background: #ff4757;
+      color: #fff;
+      box-shadow:
+        0 0 10px #ff4757cc,
+        0 0 20px #ff4757aa;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    button.restart-btn:hover {
+      background: #e84118;
+      box-shadow:
+        0 0 20px #e84118cc,
+        0 0 40px #e8411888;
+    }
+
+    /* Leaderboard */
+    #leaderboard {
+      max-width: 600px;
+      width: 100%;
+      background: #141f2e;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      color: #00e6ffcc;
+      box-shadow:
+        inset 0 0 20px #00e6ff33;
+      user-select: none;
+    }
+    #leaderboard h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.8rem;
+      color: #00ffffcc;
+      text-shadow: 0 0 8px #00ffffcc;
+    }
+    #leaderboard ol {
+      list-style-position: inside;
+      font-size: 1.1rem;
+      padding-left: 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    #leaderboard ol li {
+      margin-bottom: 0.4rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 8px;
+      background: #002233aa;
+      display: flex;
+      justify-content: space-between;
+      box-shadow: inset 0 0 6px #00ffff33;
+    }
+    #leaderboard ol li span.moves {
+      font-weight: 700;
+      color: #00ffaaaa;
+    }
+    #leaderboard ol li span.time {
+      font-weight: 700;
+      color: #00aaffaa;
+    }
+
+    /* Responsive grid for different difficulties */
+    @media (min-width: 600px) {
+      #game-board.easy {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      #game-board.medium {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      #game-board.hard {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+
+    @media (max-width: 599px) {
+      #game-board.easy,
+      #game-board.medium {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      #game-board.hard {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .card {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+      }
+    }
+    
+    
+    /* Smooth fade-in animation for leaderboard */
+.leaderboard {
+  animation: fadeIn 0.8s ease forwards;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Show leaderboard with opacity */
+.leaderboard.show {
+  opacity: 1;
+}
+
+/* Fade in keyframes */
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Smooth hover and focus effect for Restart button */
+.restart-btn {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 15px #ff4757aa;
+}
+
+.restart-btn:hover,
+.restart-btn:focus {
+  background-color: #e84118;
+  box-shadow: 0 0 25px #ff4757cc;
+  outline: none;
+  transform: scale(1.05);
+}
+
+/* Leaderboard list smooth scrolling and hover */
+.leaderboard ul {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #00d9ff #1d1f27;
+}
+
+.leaderboard ul::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leaderboard ul::-webkit-scrollbar-track {
+  background: #1d1f27;
+  border-radius: 5px;
+}
+
+.leaderboard ul::-webkit-scrollbar-thumb {
+  background-color: #00d9ff;
+  border-radius: 5px;
+  border: 2px solid #1d1f27;
+}
+
+.leaderboard li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+  cursor: default;
+}
+
+.leaderboard li:hover {
+  background-color: #00d9ff22;
+}
+
+/* Leaderboard title glow */
+.leaderboard h2 {
+  text-shadow:
+    0 0 5px #00d9ff,
+    0 0 10px #00d9ff,
+    0 0 20px #00d9ff,
+    0 0 40px #00d9ff;
+}
+
+.restart-btn {
+  margin-top: 40px; /* increase space above restart button */
+  margin-bottom: 30px; /* add space below button to separate from leaderboard */
+}
+
+.leaderboard {
+  padding: 20px 25px; /* add padding inside leaderboard for better spacing */
+  margin-top: 10px; /* add a little gap from the button */
+  border-radius: 15px;
+  box-shadow: 0 0 30px #00d9ff88;
+}
+
+  </style>
+</head>
+<body>
+
+  <h1>🧠 Memory Match</h1>
+
+  <div class="difficulty">
+    <label for="difficulty">Difficulty:</label>
+    <select id="difficulty" aria-label="Select difficulty level">
+      <option value="easy">Easy (3x4)</option>
+      <option value="medium" selected>Medium (4x4)</option>
+      <option value="hard">Hard (5x6)</option>
+    </select>
+  </div>
+
+  <div class="stats" aria-live="polite" aria-atomic="true">
+    <div>⏱️ Time: <span id="timer">0</span>s</div>
+    <div>🎯 Moves: <span id="moves">0</span></div>
+  </div>
+
+  <div id="game-board" class="medium" aria-label="Memory game board"></div>
+
+  <button class="restart-btn" aria-label="Restart game">🔄 Restart</button>
+
+  <section id="leaderboard" aria-live="polite" aria-atomic="true" aria-label="Leaderboard">
+    <h2>🏆 Leaderboard (Best Scores)</h2>
+    <ol id="leaderboard-list" role="list">
+      <li>No scores yet. Play and be the first!</li>
+    </ol>
+  </section>
+
+  <!-- Sound Effects -->
+  <audio id="flipSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="matchSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg" preload="auto"></audio>
+
+  <script>
+    // Elements
+    const board = document.getElementById('game-board');
+    const timerEl = document.getElementById('timer');
+    const movesEl = document.getElementById('moves');
+    const difficultySelect = document.getElementById('difficulty');
+    const restartBtn = document.querySelector('.restart-btn');
+    const leaderboardList = document.getElementById('leaderboard-list');
+
+    const flipSound = document.getElementById('flipSound');
+    const matchSound = document.getElementById('matchSound');
+    const winSound = document.getElementById('winSound');
+
+    // Game variables
+    let firstCard, secondCard;
+    let lockBoard = false;
+    let timer;
+    let time = 0;
+    let moves = 0;
+    let totalPairs = 0;
+    let matchedPairs = 0;
+
+    // For leaderboard (localStorage)
+    const STORAGE_KEY = 'memory-match-leaderboard';
+    let leaderboard = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    // Extended emoji list - premium with tech icons & emojis for fun
+    const emojis = [
+      "💻", "🖥️", "🖱️", "⌨️", "📱", "🕹️", "🧩", "🌐", "📂",
+      "🛠️", "📡", "🧑‍💻", "📊", "📦", "🔧", "🗃️", "⚙️", "🔌", "💾",
+      "📚", "📝", "🔍", "💡", "🎯", "🚀", "🛡️", "📈", "🔐", "🌟"
+    ];
+
+    // Shuffle function
+    function shuffle(array) {
+      for(let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // Timer
+    function startTimer() {
+      clearInterval(timer);
+      time = 0;
+      timerEl.textContent = time;
+      timer = setInterval(() => {
+        time++;
+        timerEl.textContent = time;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timer);
+    }
+
+    // Create board with given rows & cols
+    function createBoard(rows, cols) {
+      board.innerHTML = '';
+      board.className = difficultySelect.value;
+      totalPairs = (rows * cols) / 2;
+      matchedPairs = 0;
+      moves = 0;
+      movesEl.textContent = moves;
+      timerEl.textContent = 0;
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+
+      startTimer();
+
+      // Choose emojis & duplicate
+      let chosen = shuffle(emojis).slice(0, totalPairs);
+      let cards = shuffle([...chosen, ...chosen]);
+
+      // Setup grid columns & rows
+      board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      board.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+      // Create card elements
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', 'Memory card');
+        card.innerHTML = `
+          <div class="front"></div>
+          <div class="back">${emoji}</div>
+        `;
+        card.dataset.emoji = emoji;
+
+        card.addEventListener('click', () => flipCard(card));
+        card.addEventListener('keydown', e => {
+          if(e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            flipCard(card);
+          }
+        });
+
+        board.appendChild(card);
+      });
+    }
+
+    // Flip card logic
+    function flipCard(card) {
+      if(lockBoard || card === firstCard || card.classList.contains('flip') || card.classList.contains('matched')) return;
+
+      card.classList.add('flip');
+      playSound(flipSound);
+
+      if(!firstCard) {
+        firstCard = card;
+        return;
+      }
+      secondCard = card;
+      lockBoard = true;
+      moves++;
+      movesEl.textContent = moves;
+
+      checkMatch();
+    }
+
+    // Check if two flipped cards match
+    function checkMatch() {
+      const isMatch = firstCard.dataset.emoji === secondCard.dataset.emoji;
+
+      if(isMatch) {
+        markMatched();
+      } else {
+        unflipCards();
+      }
+    }
+
+    // Mark matched cards
+    function markMatched() {
+      playSound(matchSound);
+      firstCard.classList.add('matched');
+      secondCard.classList.add('matched');
+      matchedPairs++;
+
+      resetTurn();
+
+      if(matchedPairs === totalPairs) {
+        stopTimer();
+        playSound(winSound);
+        setTimeout(() => {
+          const msg = `🎉 You won in ${time}s with ${moves} moves!`;
+          alert(msg);
+          updateLeaderboard(time, moves);
+        }, 400);
+      }
+    }
+
+    // Unflip cards after delay
+    function unflipCards() {
+      setTimeout(() => {
+        firstCard.classList.remove('flip');
+        secondCard.classList.remove('flip');
+        resetTurn();
+      }, 1200);
+    }
+
+    // Reset turn variables
+    function resetTurn() {
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+    }
+
+    // Restart game handler
+    function startGame() {
+      const level = difficultySelect.value;
+      let rows, cols;
+
+      switch(level) {
+        case 'easy':
+          rows = 3; cols = 4;
+          break;
+        case 'medium':
+          rows = 4; cols = 4;
+          break;
+        case 'hard':
+          rows = 5; cols = 6;
+          break;
+        default:
+          rows = 4; cols = 4;
+      }
+
+      createBoard(rows, cols);
+    }
+
+    // Play sound helper
+    function playSound(sound) {
+      if(!sound) return;
+      sound.currentTime = 0;
+      sound.play().catch(e => {});
+    }
+
+    // Leaderboard update and display
+    function updateLeaderboard(time, moves) {
+      const newEntry = { time, moves, date: new Date().toISOString() };
+      leaderboard.push(newEntry);
+
+      // Sort by time asc, then moves asc
+      leaderboard.sort((a,b) => {
+        if(a.time === b.time) return a.moves - b.moves;
+        return a.time - b.time;
+      });
+
+      // Keep top 10
+      if(leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10);
+
+      // Save
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(leaderboard));
+
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = '';
+      if(leaderboard.length === 0) {
+        leaderboardList.innerHTML = '<li>No scores yet. Play and be the first!</li>';
+        return;
+      }
+
+      leaderboard.forEach((score, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>#${i+1}</span>
+          <span class="moves">🏅 Moves: ${score.moves}</span>
+          <span class="time">⏱️ Time: ${score.time}s</span>
+        `;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    // Event listeners
+    restartBtn.addEventListener('click', () => {
+      stopTimer();
+      startGame();
+    });
+
+    difficultySelect.addEventListener('change', () => {
+      stopTimer();
+      startGame();
+    });
+
+    // Initialize
+    renderLeaderboard();
+    startGame();
+
+  </script>
+</body>
+</html>
